@@ -14,7 +14,8 @@ HELP = '''
 /botver – версия бота и список изменений.
 /menu – отобразить все команды кнопками.\n
 *Развлечения:*
-/repeat – повторять за тобой.\n
+/repeat – повторять за тобой.
+/rps – поиграть со мной в "Камень, ножницы, бумагу".\n
 *Информация*
 /date – узнать дату и время.
 /course – узнать курс валют.\n
@@ -45,7 +46,7 @@ weekdays = {
 # vars
 repeat_status = False
 buttons_was_active = False
-current_bot_version = 'v0\.3\.1'
+current_bot_version = 'v0\.3\.2'
 
 def get_moscow_time() -> datetime:
     delta = datetime.timedelta(hours=3, minutes=0)
@@ -150,6 +151,49 @@ def help(message):
     else:
         bot.send_message(message.chat.id, HELP, parse_mode='Markdown')
 
+@bot.message_handler(commands=["rps"])
+def rps(message):
+    global repeat_status
+    global rps_is_on
+    if repeat_status:
+        bot.send_message(message.chat.id, '/rps')
+    else:
+        user_input = message.text.lower().split()
+        paper = 'бумага'
+        if not user_input == ['/rps']:
+            if user_input[1] in ["камень", paper, "ножницы"]:
+                user_action = str(user_input[1])
+                computer_action = random.choice(["камень", paper, "ножницы"])
+                if user_action == computer_action:
+                    result = 'У нас ничья!'
+                    if user_action == paper:
+                        computer_action = 'бумагу'
+                    bot.send_message(message.chat.id, f'Мы оба выбрали {computer_action}!\n{result}')
+                else:
+                    if user_action == "камень":
+                        if computer_action == "ножницы":
+                            result = 'Ты выиграл меня.'
+                        else:
+                            computer_action = 'бумагу'
+                            result ="Я выиграл!"
+                    elif user_action == "бумага":
+                        user_action = 'бумагу'
+                        if computer_action == "камень":
+                            result = 'Ты выиграл меня.'
+                        else:
+                            result ="Я выиграл!"
+                    elif user_action == "ножницы":
+                        if computer_action == "бумага":
+                            result = 'Ты выиграл меня.'
+                            computer_action = 'бумагу'
+                        else:
+                            result ="Я выиграл!"
+                    bot.send_message(message.chat.id, f'Ты выбрал {user_action}, а я {computer_action}.\n{result}')
+            else:
+                bot.send_message(message.chat.id, 'Напиши команду /rps, и затем свой выбор:\n/rps камень, /rps ножницы или /rps бумага.')
+        else:
+            bot.send_message(message.chat.id, 'Напиши команду и свой выбор, например:\n/rps камень.')
+
 @bot.message_handler(commands=["menu"])
 def button(message):
     global repeat_status
@@ -238,7 +282,8 @@ def echo(message):
     if isinstance(message.text, str) and not repeat_status:
         technical_row1 = ["Начать сначала", "Список команд"]
         technical_row2 = ['Версия бота и список изменений', 'Назад']
-        fun = ["\"Повторюшка\"", 'Назад']
+        fun_row1 = ['"Камень, ножницы, бумага"']
+        fun_row2 = ["\"Повторюшка\"", 'Назад']
         info_row1 = ["Дата и время", "Курс валют"]
         info_row2 = ['Назад']
         feraantitilt_row1 = ["Выбрать игру", 'Напомнить Солику о клубной лиге']
@@ -250,7 +295,7 @@ def echo(message):
             buttons_was_active = True
         elif message.text == "Развлечения":
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add(*fun)
+            markup.add(*fun_row1).add(*fun_row2)
             bot.send_message(message.chat.id,'Меню "Развлечения" открыто.',reply_markup=markup)
             buttons_was_active = True
         elif message.text == "Информация":
@@ -277,6 +322,8 @@ def echo(message):
             date(message)
         elif message.text == "Определить команды":
             teams(message)
+        elif message.text == '"Камень, ножницы, бумага"':
+            rps(message)
         elif message.text == "Напомнить Солику о клубной лиге":
             league_solix(message)
         elif message.text == "\"Повторюшка\"":
