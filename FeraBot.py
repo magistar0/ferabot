@@ -3,6 +3,7 @@ from telebot import types
 import datetime
 import requests
 import random
+import time
 
 
 # constants
@@ -41,12 +42,24 @@ weekdays = {
     5: 'субббота',
     6: 'воскресенье',
 }
+minutes_endings = {
+    0: 'минут',
+    1: 'минуту',
+    2: 'минуты'
+}
+seconds_endings = {
+    0: 'секунд',
+    1: 'секунду',
+    2: 'секунды'
+}
 
 
 # vars
 repeat_status = False
 buttons_was_active = False
-current_bot_version = 'v0\.3\.2'
+current_bot_version = 'v0\.3\.3'
+last_timing = {}
+
 
 def get_moscow_time() -> datetime:
     delta = datetime.timedelta(hours=3, minutes=0)
@@ -69,19 +82,53 @@ def choose_players():
 def start(message):
     global repeat_status
     global buttons_was_active
-    button_clear(message)
     repeat_status = False
     buttons_was_active = False
-    bot.send_message(message.chat.id, START, parse_mode='Markdown')
+    bot.send_message(message.chat.id, START, parse_mode='Markdown', reply_markup=types.ReplyKeyboardRemove())
 
 @bot.message_handler(commands=["league"])
 def league_solix(message):
+    global last_timing
+    global now_timing
     global repeat_status
     if repeat_status:
         bot.send_message(message.chat.id, '/league')
     else:
-        bot.send_message(message.chat.id, 'Хорошо! Уже напоминаю Солику о клубной лиге!')
-        bot.send_message(848383407, 'Солик! Фера напоминает тебе, что надо сыграть в клубную лигу!')
+        if message.chat.id == 848383407:
+            bot.send_message(message.chat.id, 'Ты шо дурак, сам себе напоминаешь?')
+        else:
+            now_timing = time.perf_counter()
+            if message.chat.id not in last_timing:
+                last_timing[message.chat.id] = 0
+            if now_timing - last_timing[message.chat.id] < 600:
+                left_timing = 600 - int(now_timing - last_timing[message.chat.id])
+                mins = left_timing // 60
+                secs = left_timing % 60
+                if 10 <= mins <= 19:
+                    mins = f'{mins} {minutes_endings[0]}'
+                elif mins == 0:
+                    mins = ''
+                elif str(mins)[-1] in ['2', '3', '4']:
+                    mins = f'{mins} {minutes_endings[2]}'
+                elif str(mins)[-1] == '1':
+                    mins = f'{mins} {minutes_endings[1]}'
+                else:
+                    mins = f'{mins} {minutes_endings[0]}'
+                if 10 <= secs <= 19:
+                    secs = f' {secs} {seconds_endings[0]}'
+                elif str(secs)[-1] in ['2', '3', '4']:
+                    secs = f' {secs} {seconds_endings[2]}'
+                elif str(secs)[-1] == '1':
+                    secs = f' {secs} {seconds_endings[1]}'
+                elif secs == 0:
+                    secs = ''
+                else:
+                    secs = f' {secs} {seconds_endings[0]}'
+                bot.send_message(message.chat.id, f'Напоминать можно не чаще, чем раз в 10 минут.\nТы сможешь ещё раз напомнить Солику о клубной лиге только через {mins}{secs}.')
+            else:
+                bot.send_message(message.chat.id, 'Хорошо! Уже напоминаю Солику о клубной лиге!')
+                bot.send_message(848383407, 'Солик! По просьбе кого-то из людей, Фера напоминает тебе, что надо сыграть в клубную лигу!')
+                last_timing[message.chat.id] = time.perf_counter()
 
 @bot.message_handler(commands=["botver"])
 def botver(message):
@@ -338,6 +385,8 @@ def echo(message):
             help(message)
         elif message.text == "Выбрать игру":
             game(message)
+        else:
+            bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
     elif isinstance(message.text, str) and repeat_status and message.text == "Прекратить повторять":
         repeat_process(message)
     else:
@@ -349,7 +398,5 @@ def echo(message):
                     bot.send_message(message.chat.id, message.text)
             else:
                 bot.send_message(message.chat.id, 'Прости, но я пока что не умею присылать такое с моей стороны :(')
-        else:
-            bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
 
 bot.polling(none_stop=True)
