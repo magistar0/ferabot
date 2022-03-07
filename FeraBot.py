@@ -16,7 +16,8 @@ HELP = '''
 /menu – отобразить все команды кнопками.\n
 *Развлечения:*
 /repeat – повторять за тобой.
-/rps – поиграть со мной в "Камень, ножницы, бумагу".\n
+/rps – поиграть со мной в "Камень, ножницы, бумагу".
+/fish – создать текст-рыбу.\n
 *Информация*
 /date – узнать дату и время.
 /course – узнать курс валют.\n
@@ -24,7 +25,10 @@ HELP = '''
 /game – выбрать игру.
 /teams – определить, кто с кем играет.
 /league – напомнить Солику о клубной лиге.'''
+current_bot_version = 'v0\.4'
 START = f'Привет! Я бот Фера, и вот что я умею:\n{HELP}'
+link = '[здесь](https://www\.pythonanywhere\.com/user/magistar2280/shares/723b78b6749b4c48bafb99f68bd2b9be)'
+NEW_VERSION = f'Бот обновлён до версии *{current_bot_version}*\!\nСмотри список изменений {link}\.'
 bot = telebot.TeleBot(token)
 months = dict(zip(range(1, 13), ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']))
 names_feraantitilt_members = {
@@ -57,13 +61,17 @@ seconds_endings = {
 # vars
 repeat_status = False
 buttons_was_active = False
-current_bot_version = 'v0\.3\.3'
+rps_is_active = False
 last_timing = {}
+
 
 
 def get_moscow_time() -> datetime:
     delta = datetime.timedelta(hours=3, minutes=0)
     return datetime.datetime.now(datetime.timezone.utc) + delta, (datetime.datetime.now(datetime.timezone.utc) + delta).weekday()
+
+nowt, nowm = get_moscow_time()
+print(f'{nowt.hour}:{nowt.minute} Бот запущен.')
 
 def choose_players():
     players = ['Петя', 'Фера', 'Маг', 'Соля']
@@ -77,7 +85,56 @@ def choose_players():
     team1, team2 = [player1, player2], players
     return team1, team2
 
+def similar_symbols(s):
+    st = []
+    for i in range(0,len(s)):
+        if s[i] != s[i-1]:
+            st.append(s[i])
+    return "".join(st)
+
+def rps_from_buttons(message):
+    global rps_is_active
+    user_input = message.text.lower()
+    paper = 'бумага'
+    if user_input in ["камень", paper, "ножницы"]:
+        user_action = str(user_input)
+        computer_action = random.choice(["камень", paper, "ножницы"])
+        if user_action == computer_action:
+            result = 'У нас ничья!'
+            if user_action == paper:
+                computer_action = 'бумагу'
+            bot.send_message(message.chat.id, f'Мы оба выбрали {computer_action}!\n{result}')
+        else:
+            if user_action == "камень":
+                if computer_action == "ножницы":
+                    result = 'Ты выиграл меня.'
+                else:
+                    computer_action = 'бумагу'
+                    result ="Я выиграл!"
+            elif user_action == "бумага":
+                user_action = 'бумагу'
+                if computer_action == "камень":
+                    result = 'Ты выиграл меня.'
+                else:
+                    result ="Я выиграл!"
+            elif user_action == "ножницы":
+                if computer_action == "бумага":
+                    result = 'Ты выиграл меня.'
+                    computer_action = 'бумагу'
+                else:
+                    result ="Я выиграл!"
+            bot.send_message(message.chat.id, f'Ты выбрал {user_action}, а я {computer_action}.\n{result}')
+
+
 # commands
+
+@bot.message_handler(commands=["announceupdate"])
+def announce_update(message):
+    announcers = [268039219, 848383407, 1351555452]
+    for id in announcers:
+        bot.send_message(id, NEW_VERSION, parse_mode='MarkdownV2', disable_web_page_preview = True)
+
+
 @bot.message_handler(commands=["start"])
 def start(message):
     global repeat_status
@@ -127,7 +184,7 @@ def league_solix(message):
                 bot.send_message(message.chat.id, f'Напоминать можно не чаще, чем раз в 10 минут.\nТы сможешь ещё раз напомнить Солику о клубной лиге только через {mins}{secs}.')
             else:
                 bot.send_message(message.chat.id, 'Хорошо! Уже напоминаю Солику о клубной лиге!')
-                bot.send_message(848383407, 'Солик! По просьбе кого-то из людей, Фера напоминает тебе, что надо сыграть в клубную лигу!')
+                bot.send_message(848383407, 'Солик! По просьбе кого-то из людей, Фера напоминает тебе, что надо сыграть в клубную лигу! Не забудь, что ты должен зайти и позвать кого-то к себе в команду. Ты можешь сделать это в чате в Бравле, а если там все оффлайн, то в дискорд-сервере. Старайся играть раньше, чтобы было с кем сыграть.')
                 last_timing[message.chat.id] = time.perf_counter()
 
 @bot.message_handler(commands=["botver"])
@@ -156,7 +213,7 @@ def game(message):
     if repeat_status:
         bot.send_message(message.chat.id, '/game')
     else:
-        game_choice = 'Сегодня команда Fera Antitilt играет в ' + random.choice(['дбд', 'сидж', 'кс', 'таблетоп', 'фолл гайз']) + '. Так Фера сказал!'
+        game_choice = 'Сегодня команда Fera Antitilt играет в ' + random.choice(['дбд', 'сидж', 'кс', 'таблетоп', 'фолл гайз', 'паммел пати']) + '. Так Фера сказал!'
         bot.send_message(message.chat.id, game_choice)
 
 @bot.message_handler(commands=["fish"])
@@ -165,15 +222,16 @@ def fish(message):
     if repeat_status:
         bot.send_message(message.chat.id, '/fish')
     else:
+        random_number = random.randint(10, 99)
         mes = message.text.split()
         if len(mes) >= 2:
             temp = mes[1]
             for i in '.,?/\\':
                 if i in temp:
-                    temp.replace(i, '')
+                    temp = temp.replace(i, '')
             mes = int(temp)
             if not isinstance(mes, int):
-                bot.send_message(message.chat.id, 'Введи команду с длиной текста (количеством слов).\nНапример: /fish 32')
+                bot.send_message(message.chat.id, f'Введи команду с длиной текста (количеством слов).\nНапример: /fish {random_number}')
             else:
                 first_reply = requests.get('https://raw.githubusercontent.com/danakt/russian-words/master/russian.txt')
                 second_reply = requests.get('https://raw.githubusercontent.com/danakt/russian-words/master/russian_surnames.txt')
@@ -181,14 +239,16 @@ def fish(message):
                 russian_surnames = second_reply.content.decode('cp1251')
                 list_words = russian_words.splitlines()
                 list_surnames = russian_surnames.splitlines()
-                list_all = list_words.extend(list_surnames)
-                mesg_text = ''
-                for i in range(mes):
+                list_all = list_words + list_surnames
+                mesg_text = random.choice(list_all)
+                for i in range(mes-1):
                     temp_int = random.randint(0, len(list_all))
-                    mesg_text = mesg_text + ' ' + list_all[temp_int]
+                    mesg_text = (mesg_text + ' ' + list_all[temp_int])
+                mesg_text += '.'
+                mesg_text = mesg_text[:1].upper() + mesg_text[1:]
                 bot.send_message(message.chat.id, mesg_text)
         else:
-            bot.send_message(message.chat.id, 'Введи команду с длиной текста (количеством слов).\nНапример: /fish 32')
+            bot.send_message(message.chat.id, f'Введи команду с длиной текста (количеством слов).\nНапример: /fish {random_number}')
 
 @bot.message_handler(commands=["help"])
 def help(message):
@@ -202,44 +262,56 @@ def help(message):
 def rps(message):
     global repeat_status
     global rps_is_on
+    global buttons_was_active
+    global rps_is_active
+    tag = False
     if repeat_status:
         bot.send_message(message.chat.id, '/rps')
     else:
         user_input = message.text.lower().split()
         paper = 'бумага'
-        if not user_input == ['/rps']:
-            if user_input[1] in ["камень", paper, "ножницы"]:
-                user_action = str(user_input[1])
-                computer_action = random.choice(["камень", paper, "ножницы"])
-                if user_action == computer_action:
-                    result = 'У нас ничья!'
-                    if user_action == paper:
-                        computer_action = 'бумагу'
-                    bot.send_message(message.chat.id, f'Мы оба выбрали {computer_action}!\n{result}')
-                else:
-                    if user_action == "камень":
-                        if computer_action == "ножницы":
-                            result = 'Ты выиграл меня.'
-                        else:
-                            computer_action = 'бумагу'
-                            result ="Я выиграл!"
-                    elif user_action == "бумага":
-                        user_action = 'бумагу'
-                        if computer_action == "камень":
-                            result = 'Ты выиграл меня.'
-                        else:
-                            result ="Я выиграл!"
-                    elif user_action == "ножницы":
-                        if computer_action == "бумага":
-                            result = 'Ты выиграл меня.'
-                            computer_action = 'бумагу'
-                        else:
-                            result ="Я выиграл!"
-                    bot.send_message(message.chat.id, f'Ты выбрал {user_action}, а я {computer_action}.\n{result}')
-            else:
-                bot.send_message(message.chat.id, 'Напиши команду /rps, и затем свой выбор:\n/rps камень, /rps ножницы или /rps бумага.')
+        if message.text == '/rps':
+            bot.send_message(message.chat.id, 'Напиши команду и затем свой выбор:\n/rps камень, /rps ножницы или /rps бумага.')
         else:
-            bot.send_message(message.chat.id, 'Напиши команду и свой выбор, например:\n/rps камень.')
+            if not user_input == ['/rps']:
+                if user_input[1] in ["камень", paper, "ножницы"]:
+                    user_action = str(user_input[1])
+                    computer_action = random.choice(["камень", paper, "ножницы"])
+                    if user_action == computer_action:
+                        result = 'У нас ничья!'
+                        if user_action == paper:
+                            computer_action = 'бумагу'
+                        bot.send_message(message.chat.id, f'Мы оба выбрали {computer_action}!\n{result}')
+                    else:
+                        if user_action == "камень":
+                            if computer_action == "ножницы":
+                                result = 'Ты выиграл меня.'
+                            else:
+                                computer_action = 'бумагу'
+                                result ="Я выиграл!"
+                        elif user_action == "бумага":
+                            user_action = 'бумагу'
+                            if computer_action == "камень":
+                                result = 'Ты выиграл меня.'
+                            else:
+                                result ="Я выиграл!"
+                        elif user_action == "ножницы":
+                            if computer_action == "бумага":
+                                result = 'Ты выиграл меня.'
+                                computer_action = 'бумагу'
+                            else:
+                                result ="Я выиграл!"
+                        bot.send_message(message.chat.id, f'Ты выбрал {user_action}, а я {computer_action}.\n{result}')
+                else: tag = True
+            if tag:
+                if buttons_was_active:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    item1 = ["Камень", "Ножницы", "Бумага"]
+                    item2 = ["Назад к развлечениям"]
+                    markup.add(*item1).add(*item2)
+                    bot.send_message(message.chat.id,'Выбери своё действие.\nТакже ты можешь написать команду /rps, и затем свой выбор:\n/rps камень, /rps ножницы или /rps бумага.',reply_markup=markup)
+                    rps_is_active = True
+                else: bot.send_message(message.chat.id, 'Напиши команду и затем свой выбор:\n/rps камень, /rps ножницы или /rps бумага.')
 
 @bot.message_handler(commands=["menu"])
 def button(message):
@@ -323,13 +395,18 @@ def date(message):
 
 
 # bot_functions
-@bot.message_handler(content_types=["text", "audio", "voice", "document", "photo", "sticker", "video", "videoNote", "contact", "location"])
+@bot.message_handler(content_types=["text", "audio", "document", "photo", "sticker", "video", "video_note", "voice", "location", "contact",
+                 "new_chat_members", "left_chat_member", "new_chat_title", "new_chat_photo", "delete_chat_photo",
+                 "group_chat_created", "supergroup_chat_created", "channel_chat_created", "migrate_to_chat_id",
+                 "migrate_from_chat_id", "pinned_message"])
 def echo(message):
     global buttons_was_active
+    global rps_is_active
+    naxui = False
     if isinstance(message.text, str) and not repeat_status:
         technical_row1 = ["Начать сначала", "Список команд"]
         technical_row2 = ['Версия бота и список изменений', 'Назад']
-        fun_row1 = ['"Камень, ножницы, бумага"']
+        fun_row1 = ['"Камень, ножницы, бумага"', 'Текст-рыба']
         fun_row2 = ["\"Повторюшка\"", 'Назад']
         info_row1 = ["Дата и время", "Курс валют"]
         info_row2 = ['Назад']
@@ -340,11 +417,12 @@ def echo(message):
             markup.add(*technical_row1).add(*technical_row2)
             bot.send_message(message.chat.id,'Меню "Техническое" открыто.',reply_markup=markup)
             buttons_was_active = True
-        elif message.text == "Развлечения":
+        elif message.text == "Развлечения" or message.text == 'Назад к развлечениям':
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add(*fun_row1).add(*fun_row2)
             bot.send_message(message.chat.id,'Меню "Развлечения" открыто.',reply_markup=markup)
             buttons_was_active = True
+            rps_is_active = False
         elif message.text == "Информация":
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add(*info_row1).add(*info_row2)
@@ -357,6 +435,8 @@ def echo(message):
             buttons_was_active = True
         elif message.text == "Назад":
             button(message)
+        elif message.text == 'Текст-рыба':
+            fish(message)
         elif message.text == "Курс валют":
             course(message)
         elif message.text == "Начать сначала":
@@ -370,9 +450,12 @@ def echo(message):
         elif message.text == "Определить команды":
             teams(message)
         elif message.text == '"Камень, ножницы, бумага"':
+            buttons_was_active = True
             rps(message)
         elif message.text == "Напомнить Солику о клубной лиге":
             league_solix(message)
+        elif (message.text == 'Камень' or message.text == 'Ножницы' or message.text == 'Бумага') and rps_is_active:
+            rps_from_buttons(message)
         elif message.text == "\"Повторюшка\"":
             buttons_was_active = True
             repeat(message)
@@ -386,7 +469,25 @@ def echo(message):
         elif message.text == "Выбрать игру":
             game(message)
         else:
-            bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
+            message_for_checking = similar_symbols(message.text)
+            if 'фера' in message_for_checking.lower():
+                bot.send_message(message.chat.id, 'Ты написал моё имя! Да, я глазастый!')
+            elif 'привет' in message_for_checking.lower():
+                bot.send_message(message.chat.id, random.choice(['Привет.', 'И тебе привет.', 'Здарова.', 'ку']))
+            else:
+                for one in ["пошёл", "пошел", "иди", 'пашол', "пашел", "пашёл", "poshel", 'idi', 'pashol', 'пшел', 'пшол', 'пшёл', 'pschel', 'pschol', 'pshol', 'poshol']:
+                    for two in ["нахуй", "на хуй", "в пизду", 'впизду', 'нах', 'nahui', 'nah', 'v pizdu', 'vpizdu', 'нахрен', 'на хрен', 'na hren', 'na hui', 'nahren', 'нахер', 'на хер', 'na her', 'naher', 'в жопу', 'вжопу', 'v zhopu', 'vzhopu']:
+                        for three in ['', ' ', ' ты ', '-ка ты ', ' ка ты ', ' блять ']:
+                            if one + three + two in message_for_checking.lower().strip() or two + three + one in message_for_checking.lower().strip():
+                                bot.send_message(message.chat.id, random.choice(['Нет, я не буду этого делать.', "Взаимно.", "ок", "Кто обзывается – тот сам так и называется!"]))
+                                naxui = True
+                                print('Я ответил как надо на:', message.text)
+                                break
+                        if naxui: break
+                    if naxui: break
+                if not naxui:
+                    print('Unknown:', message.text)
+                    bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
     elif isinstance(message.text, str) and repeat_status and message.text == "Прекратить повторять":
         repeat_process(message)
     else:
@@ -398,5 +499,7 @@ def echo(message):
                     bot.send_message(message.chat.id, message.text)
             else:
                 bot.send_message(message.chat.id, 'Прости, но я пока что не умею присылать такое с моей стороны :(')
+        else:
+            bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
 
 bot.polling(none_stop=True)
