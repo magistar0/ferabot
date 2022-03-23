@@ -24,19 +24,16 @@ HELP = '''
 *Fera Antitilt:*
 /game – выбрать игру.
 /teams – определить, кто с кем играет.
+/killer – выбрать убийцу для DBD.
+/brawl – случайный пик для BS.
 /league – напомнить Солику о клубной лиге.'''
-current_bot_version = 'v0\.4'
+current_bot_version = 'v0\.5'
 START = f'Привет! Я бот Фера, и вот что я умею:\n{HELP}'
 link = '[здесь](https://www\.pythonanywhere\.com/user/magistar2280/shares/723b78b6749b4c48bafb99f68bd2b9be)'
 NEW_VERSION = f'Бот обновлён до версии *{current_bot_version}*\!\nСмотри список изменений {link}\.'
 bot = telebot.TeleBot(token)
 months = dict(zip(range(1, 13), ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']))
-names_feraantitilt_members = {
-    'Фера': 'Ферой',
-    'Маг': 'Магом',
-    'Соля': 'Солей',
-    'Петя': 'Петей',
-}
+names_feraantitilt_members = dict(zip(['Фера', "Маг", "Соля", "Петя"], ['Ферой', "Магом", "Солей", "Петей"]))
 weekdays = {
     0: 'понедельник',
     1: 'вторник',
@@ -56,6 +53,11 @@ seconds_endings = {
     1: 'секунду',
     2: 'секунды'
 }
+ids = {
+    848383407: 'Солик',
+    1351555452: 'Фера',
+    1327237491: 'Петя'
+}
 
 
 # vars
@@ -63,7 +65,6 @@ repeat_status = False
 buttons_was_active = False
 rps_is_active = False
 last_timing = {}
-
 
 
 def get_moscow_time() -> datetime:
@@ -130,7 +131,7 @@ def rps_from_buttons(message):
 
 @bot.message_handler(commands=["announceupdate"])
 def announce_update(message):
-    announcers = [268039219, 848383407, 1351555452]
+    announcers = [268039219, 848383407, 1351555452, 1327237491]
     for id in announcers:
         bot.send_message(id, NEW_VERSION, parse_mode='MarkdownV2', disable_web_page_preview = True)
 
@@ -195,7 +196,42 @@ def botver(message):
         bot.send_message(message.chat.id, '/botver')
     else:
         link = '[здесь](https://www\.pythonanywhere\.com/user/magistar2280/shares/723b78b6749b4c48bafb99f68bd2b9be)'
-        bot.send_message(message.chat.id, f'Текущая версия бота: {current_bot_version}\nСписок изменений можно посмотреть {link}\.', parse_mode='MarkdownV2', disable_web_page_preview = True)
+        bot.send_message(message.chat.id, f'Текущая версия бота: *{current_bot_version}*\nСписок изменений можно посмотреть {link}\.', parse_mode='MarkdownV2', disable_web_page_preview = True)
+
+@bot.message_handler(commands=["brawl"])
+def brawl(message):
+    global repeat_status
+    if repeat_status:
+        bot.send_message(message.chat.id, '/brawl')
+    else:
+        list_brawlers = 'Шелли Нита Кольт Булл Джесси Брок Динамайк Бо Тик 8-бит Эмз Сту Эль-Примо Барли Поко Роза Рико Дэррил Пенни Карл Джеки Пайпер Пэм Фрэнк Биби Беа Нани Эдгар Грифф Гром Мортис Тара Джин Макс Спраут Байрон Скуик Ворон Леон Амбер Мэг Спайк Сэнди Гэйл Вольт Колетт Лу Белль Базз Эш Лола Фэнг Ева'.split() + ['Мистер П.', 'Генерал Гавс']
+        picked_brawlers = random.sample(list_brawlers, 3)
+        bot.send_message(message.chat.id, f'Вот вам пик для победы в Brawl Stars: {picked_brawlers[0]}, {picked_brawlers[1]} и {picked_brawlers[2]}.\nСамый лучший!'.replace('..', '.'))
+
+@bot.message_handler(commands=["killer"])
+def killer(message):
+    global repeat_status
+    global ids
+    player = None
+    if repeat_status:
+        bot.send_message(message.chat.id, '/killer')
+    else:
+        if message.chat.id in ids:
+            player = ids[message.chat.id]
+        else:
+            player == None
+        if message.chat.id == 848383407:
+            killer = random.choice(['Свинья', 'Доктор', 'Палач', 'Легион', 'Немезис', 'Охотник', 'Призрак', 'Медсестра', 'Деревенщина', 'Охотница'])
+        elif message.chat.id == 1351555452:
+            killer = random.choice(['Охотник', 'Призрак', 'Медсестра', 'Деревенщина', 'Тень', 'Каннибал', 'Гоуст Фейс', 'Дух', 'Немезис', 'Охотница'])
+        elif message.chat.id == 1327237491:
+            killer = random.choice(["охотник", "охотница", "призрак", "деревенщина", "медсестра", "ведьма", "дух", "легион", "чума", "они", "палач", "мор", "художница"]).capitalize()
+        else:
+            killer = None
+        if killer == None:
+            bot.send_message(message.chat.id, 'Я тебя не знаю, напиши моему создателю.')
+        else:
+            bot.send_message(message.chat.id, f'Так, а ты у нас, значит, {player}, да?\nЧто ж, сегодня твой убийца – {killer}.')
 
 @bot.message_handler(commands=["teams"])
 def teams(message):
@@ -410,8 +446,9 @@ def echo(message):
         fun_row2 = ["\"Повторюшка\"", 'Назад']
         info_row1 = ["Дата и время", "Курс валют"]
         info_row2 = ['Назад']
-        feraantitilt_row1 = ["Выбрать игру", 'Напомнить Солику о клубной лиге']
-        feraantitilt_row2 = ['Определить команды', 'Назад']
+        feraantitilt_row1 = ["Выбрать игру", 'Определить команды']
+        feraantitilt_row2 = ['Напомнить Солику о клубной лиге', 'Пик для Brawl Stars']
+        feraantitilt_row3 = ['Выбрать убийцу', 'Назад']
         if message.text == "Техническое":
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             markup.add(*technical_row1).add(*technical_row2)
@@ -430,7 +467,7 @@ def echo(message):
             buttons_was_active = True
         elif message.text == "Fera Antitilt":
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add(*feraantitilt_row1).add(*feraantitilt_row2)
+            markup.add(*feraantitilt_row1).add(*feraantitilt_row2).add(*feraantitilt_row3)
             bot.send_message(message.chat.id,'Меню "Fera Antitilt" открыто.',reply_markup=markup)
             buttons_was_active = True
         elif message.text == "Назад":
@@ -449,6 +486,10 @@ def echo(message):
             date(message)
         elif message.text == "Определить команды":
             teams(message)
+        elif message.text == 'Выбрать убийцу':
+            killer(message)
+        elif message.text == 'Пик для Brawl Stars':
+            brawl(message)
         elif message.text == '"Камень, ножницы, бумага"':
             buttons_was_active = True
             rps(message)
@@ -481,12 +522,14 @@ def echo(message):
                             if one + three + two in message_for_checking.lower().strip() or two + three + one in message_for_checking.lower().strip():
                                 bot.send_message(message.chat.id, random.choice(['Нет, я не буду этого делать.', "Взаимно.", "ок", "Кто обзывается – тот сам так и называется!"]))
                                 naxui = True
-                                print('Я ответил как надо на:', message.text)
+                                nowt, nowm = get_moscow_time()
+                                print(f'{nowt.hour}:{nowt.minute} Я ответил как надо на:', message.text)
                                 break
                         if naxui: break
                     if naxui: break
                 if not naxui:
-                    print('Unknown:', message.text)
+                    nowt, nowm = get_moscow_time()
+                    print(f'{nowt.hour}:{nowt.minute} Unknown:', message.text)
                     bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
     elif isinstance(message.text, str) and repeat_status and message.text == "Прекратить повторять":
         repeat_process(message)
@@ -502,4 +545,11 @@ def echo(message):
         else:
             bot.send_message(message.chat.id, 'К сожалению, я ещё слишком молод и мало чему научен, поэтому не могу понять это сообщение :(\nЧтобы узнать то, что я умею, напиши /help\nА если ты слишком недоволен, что я не умею то, что ты хочешь, то напиши моему создателю!')
 
-bot.polling(none_stop=True)
+while True:
+    try:
+        bot.polling()
+    except Exception as e:
+        print(e)
+        nowt, nowm = get_moscow_time()
+        print(f'{nowt.hour}:{nowt.minute} Бот перезапущен из-за ошибки.')
+        continue
